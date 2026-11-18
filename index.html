@@ -63,13 +63,14 @@
     }
     .tab-btn.active { background: var(--om-heritage-green); color: white; box-shadow: 0 2px 5px rgba(0,90,49,0.3); }
 
-    /* Region Selector Tabs */
-    .region-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-    .region-tab {
-      background: var(--card-bg); border: 2px solid var(--border-color); padding: 8px 16px;
-      border-radius: 20px; font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap;
+    /* Region Selector Dropdown */
+    .region-select-container { margin-bottom: 15px; width: 100%; }
+    .region-dropdown {
+      width: 100%; padding: 12px 16px; background: var(--card-bg); border: 2px solid var(--border-color);
+      border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--om-dark-text); cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04); outline: none; transition: border-color 0.2s;
     }
-    .region-tab.active { background: var(--om-heritage-green); color: white; border-color: var(--om-heritage-green); }
+    .region-dropdown:focus { border-color: var(--om-heritage-green); }
 
     /* Header Banner */
     .header-banner {
@@ -173,8 +174,10 @@
 
     <!-- VOTING TAB -->
     <div id="tab-vote" class="tab-content">
-      <!-- REGION SWITCHER BAR -->
-      <div id="regionTabs" class="region-tabs"></div>
+      <!-- REGION SELECTOR DROPDOWN -->
+      <div class="region-select-container">
+        <select id="regionDropdown" class="region-dropdown" onchange="onRegionChange(this.value)"></select>
+      </div>
 
       <div class="header-banner">
         <div class="brand-tag" id="t-brand">Old Mutual Choral Competition</div>
@@ -195,7 +198,9 @@
 
     <!-- LIVE RESULTS TAB -->
     <div id="tab-results" class="tab-content hidden">
-      <div id="resultsRegionTabs" class="region-tabs"></div>
+      <div class="region-select-container">
+        <select id="resultsRegionDropdown" class="region-dropdown" onchange="onResultsRegionChange(this.value)"></select>
+      </div>
       <div class="header-banner" style="border-radius: 14px; margin-bottom: 20px;">
         <div class="brand-tag">Live Public Voting</div>
         <h1 id="resultsContestName">Loading Standings...</h1>
@@ -316,7 +321,7 @@
         document.getElementById("contestName").textContent = "No Active Voting Regions";
         document.getElementById("candidatesList").innerHTML = "";
         document.getElementById("submitBtn").disabled = true;
-        document.getElementById("regionTabs").innerHTML = "";
+        document.getElementById("regionDropdown").innerHTML = '<option value="">No Active Regions</option>';
         return;
       }
 
@@ -324,18 +329,14 @@
         currentContestId = contests[0].id;
       }
 
-      const regionBar = document.getElementById("regionTabs");
-      regionBar.innerHTML = "";
+      const dropdown = document.getElementById("regionDropdown");
+      dropdown.innerHTML = "";
       contests.forEach(c => {
-        const btn = document.createElement("button");
-        btn.className = `region-tab ${c.id === currentContestId ? 'active' : ''}`;
-        btn.textContent = c.name;
-        btn.onclick = () => {
-          currentContestId = c.id;
-          selectedCandidate = null;
-          loadVotingContests();
-        };
-        regionBar.appendChild(btn);
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (c.id === currentContestId) opt.selected = true;
+        dropdown.appendChild(opt);
       });
 
       const activeContest = contests.find(c => c.id === currentContestId);
@@ -364,6 +365,12 @@
         });
         wrap.appendChild(div);
       });
+    }
+
+    function onRegionChange(contestId) {
+      currentContestId = contestId;
+      selectedCandidate = null;
+      loadVotingContests();
     }
 
     async function submitVote() {
@@ -395,7 +402,7 @@
       const { data: contests, error } = await sb.from("contests").select("id,name").eq("active", true).order("created_at");
       if (error || !contests || contests.length === 0) {
         document.getElementById("resultsContestName").textContent = "No Active Results";
-        document.getElementById("resultsRegionTabs").innerHTML = "";
+        document.getElementById("resultsRegionDropdown").innerHTML = '<option value="">No Active Regions</option>';
         document.getElementById("resultsList").innerHTML = "<p style='text-align:center;'>No active contests available.</p>";
         return;
       }
@@ -404,19 +411,21 @@
         resultsContestId = contests[0].id;
       }
 
-      const regionBar = document.getElementById("resultsRegionTabs");
-      regionBar.innerHTML = "";
+      const dropdown = document.getElementById("resultsRegionDropdown");
+      dropdown.innerHTML = "";
       contests.forEach(c => {
-        const btn = document.createElement("button");
-        btn.className = `region-tab ${c.id === resultsContestId ? 'active' : ''}`;
-        btn.textContent = c.name;
-        btn.onclick = () => {
-          resultsContestId = c.id;
-          loadResults();
-        };
-        regionBar.appendChild(btn);
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (c.id === resultsContestId) opt.selected = true;
+        dropdown.appendChild(opt);
       });
 
+      loadResults();
+    }
+
+    function onResultsRegionChange(contestId) {
+      resultsContestId = contestId;
       loadResults();
     }
 
@@ -480,7 +489,6 @@
       data.forEach(c => {
         select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
         const badge = c.active ? `<span class="badge-active">ACTIVE</span>` : `<span class="badge-inactive">INACTIVE</span>`;
-        // Now toggles active state individually without deactivating others!
         const toggleBtn = c.active 
           ? `<button class="btn-danger" onclick="toggleContestStatus('${c.id}', false)">Deactivate</button>` 
           : `<button class="btn-small" onclick="toggleContestStatus('${c.id}', true)">Make Active</button>`;
