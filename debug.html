@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <title>Raw Fetch Test</title>
+  <style>body { font-family: monospace; padding: 20px; background: #111; color: #0f0; } pre { background: #222; padding: 15px; }</style>
+</head>
+<body>
+  <h2>Raw Fetch Connection Test</h2>
+  <pre id="output">Testing connection...</pre>
+  <script src="config.js"></script>
+  <script>
+    const out = document.getElementById('output');
+    const url = window.SUPABASE_URL + "/rest/v1/contests?select=*";
+    
+    fetch(url, {
+      headers: {
+        'apikey': window.SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY
+      }
+    })
+    .then(res => res.text())
+    .then(text => {
+      out.textContent = "SUCCESS! Server responded:\n\n" + text;
+    })
+    .catch(err => {
+      out.textContent = "RAW FETCH FAILED.\n\nError: " + err.message + "\n\nThis means your browser, your internet provider, or Supabase's outage is blocking the connection.";
+    });
+  </script>
+</body>
+</html>

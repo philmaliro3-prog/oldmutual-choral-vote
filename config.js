@@ -1,0 +1,2 @@
+window.SUPABASE_URL = "https://vylxxuytnxdztsljinhll.supabase.co";
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5bGx4dXl0bnhkenRsamlpbmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MTcwNzQsImV4cCI6MjExMDM5MzA3NH0.ToiOCkdqBb1a9rdAciOuROi6cQvo3gQUIIIJhkFAlNY";

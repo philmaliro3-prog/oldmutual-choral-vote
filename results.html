@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Old Mutual Choral Competition – Live Results</title>
+  <style>
+    :root {
+      --om-heritage-green: #005A31;
+      --om-fresh-green: #50B848;
+      --om-teal: #009677;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: transparent;
+      color: #ffffff;
+      margin: 0;
+      padding: 32px;
+    }
+
+    .scoreboard {
+      max-width: 850px;
+      background: rgba(0, 42, 23, 0.88);
+      border-left: 8px solid var(--om-fresh-green);
+      border-radius: 12px;
+      padding: 24px 32px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+
+    .header h2 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    .badge {
+      background: var(--om-fresh-green);
+      color: #002A17;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 14px 0;
+    }
+
+    .label {
+      width: 240px;
+      font-size: 20px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bar-wrap {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.12);
+      height: 32px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--om-teal), var(--om-fresh-green));
+      width: 0;
+      transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .count {
+      width: 80px;
+      text-align: right;
+      font-weight: 800;
+      font-size: 22px;
+      color: #A8E6CF;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="results"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    const urlParams = new URLSearchParams(window.location.search);
+    const filterContestId = urlParams.get('contest');
+
+    function render(rows) {
+      const root = document.getElementById("results");
+      if (!rows || rows.length === 0) {
+        root.innerHTML = "";
+        return;
+      }
+
+      const byContest = {};
+      rows.forEach((r) => {
+        if (!byContest[r.contest_name]) byContest[r.contest_name] = [];
+        byContest[r.contest_name].push(r);
+      });
+
+      root.innerHTML = "";
+      Object.entries(byContest).forEach(([name, items]) => {
+        const max = Math.max(...items.map((i) => i.votes), 1);
+        const board = document.createElement("div");
+        board.className = "scoreboard";
+        board.innerHTML = `
+          <div class="header">
+            <h2>${name}</h2>
+            <span class="badge">Live Public Vote</span>
+          </div>
+        `;
+
+        items.forEach((i) => {
+          const pct = (i.votes / max) * 100;
+          const row = document.createElement("div");
+          row.className = "row";
+          row.innerHTML = `
+            <div class="label">${i.candidate_name}</div>
+            <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+            <div class="count">${i.votes}</div>
+          `;
+          board.appendChild(row);
+        });
+        root.appendChild(board);
+      });
+    }
+
+    async function refresh() {
+      let query = sb.from("public_results").select("*");
+      if (filterContestId) query = query.eq("contest_id", filterContestId);
+      
+      const { data, error } = await query;
+      if (!error) {
+        render(data || []);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
